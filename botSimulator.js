@@ -1,22 +1,41 @@
 import { chromium } from "playwright";
 
 // === Configuration ===
-const TARGET_URL = "https://edith.simschab.cloud/";
+const TARGET_URL = "https://edith.simschab.cloud/contact"; // URL de la page contenant le formulaire
 const FILL_HONEYPOT = false;
 const WAIT_BEFORE_SUBMIT = 2000;
 const ENABLE_JS_SUBMISSION = true;
-const FORM_NAME = "form_contact";
+const FORM_NAME = "form_contact"; // Nom du formulaire à chercher
 
-// === Utilitaires ===
-function isHoneypotField(name, id) {
-  const keywords = ["confirm", "trap", "honeypot", "spam", "timer", "context", "origin", "security"];
-  return keywords.some(kw => (name && name.toLowerCase().includes(kw)) || (id && id.toLowerCase().includes(kw)));
-}
+// === Fonctionnalités ===
 
-function isCsrfField(name, id) {
+// Vérifie si le champ est un champ CSRF ou un honeypot
+function isCsrfField(name, id, value) {
+  // Liste des mots-clés de sécurité à vérifier
+  const csrfKeywords = [
+    "csrf",
+    "token",
+    "security",
+    "auth",
+    "x-csrf",
+    "xsrf",
+    "anti-csrf",
+    "request_token",
+    "security_token",
+    "security",
+    "authenticity_token",
+    "session_token",
+    "anti_xss",
+    "anti_csrf",
+    "x-xsrf-token",
+    "x-csrf-token"
+  ];
+
+  // Vérifie si l'ID, le nom ou la valeur du champ contient l'un des mots-clés de sécurité
   return (
-    (id && id.toLowerCase().includes("csrf")) ||
-    (name && (name.toLowerCase().includes("csrf") || name.toLowerCase().includes("token")))
+    (id && csrfKeywords.some(kw => id.toLowerCase().includes(kw))) ||
+    (name && csrfKeywords.some(kw => name.toLowerCase().includes(kw))) ||
+    (value && csrfKeywords.some(kw => value.toLowerCase().includes(kw)))
   );
 }
 
@@ -71,15 +90,18 @@ async function hoverAndClick(page, selector) {
 
   await page.goto(TARGET_URL, { waitUntil: "domcontentloaded" });
 
+  // Recherche du formulaire avec le nom défini
   let form = await page.$(`form[name="${FORM_NAME}"]`);
+
+  // Si le formulaire n'est pas trouvé, chercher un formulaire avec "contact" dans son nom ou sa classe
   if (!form) {
-    form = (await page.$(".form_contact")) || (await page.$(""));
+    form = await page.$('form[name*="contact"], form[class*="contact"]');
     if (!form) {
       console.log("Aucun formulaire trouvé.");
       await browser.close();
       return;
     }
-    console.log("Formulaire trouvé avec la classe 'form_contact'");
+    console.log("Formulaire trouvé avec 'contact' dans le nom ou la classe.");
   } else {
     console.log(`Formulaire "${FORM_NAME}" trouvé.`);
   }
@@ -105,7 +127,7 @@ async function hoverAndClick(page, selector) {
   for (const field of validFields) {
     const selector = field.id ? `#${field.id}` : `[name="${field.name}"]`;
 
-    if (field.hidden && !FILL_HONEYPOT) {
+    if (field.hidden && !field.value && !FILL_HONEYPOT) {
       if (isCsrfField(field.name, field.id)) {
         console.log(`Ignoré (CSRF) : ${field.name}`);
         continue;
@@ -171,6 +193,6 @@ async function hoverAndClick(page, selector) {
     console.log("Formulaire soumis via .submit()");
   }
 
-  await delay(3000);
+  await delay(1000);
   await browser.close();
 })();
