@@ -65,7 +65,7 @@ function randomDelay(min = 400, max = 1000) {
 async function typeLikeHuman(page, selector, text) {
   for (const char of text) {
     await page.type(selector, char);
-    await delay(randomDelay(50, 150));
+    await delay(randomDelay(100, 150));
   }
 }
 
@@ -180,7 +180,7 @@ async function hoverAndClick(page, selector) {
       try {
         // Ajouter un mouvement de souris avant de saisir ou interagir
         await hoverAndClick(page, selector);
-        await delay(randomDelay(200, 300)); // Simulation de temps d'attente entre les actions humaines
+        await delay(randomDelay(400, 600)); // Simulation de temps d'attente entre les actions humaines
 
         if (field.tag === "select") {
           const options = await page.$$eval(`${selector} option`, opts =>
@@ -203,14 +203,15 @@ async function hoverAndClick(page, selector) {
           await typeLikeHuman(page, selector, value);
           console.log(`Saisi (lettre par lettre) : ${field.name}`);
         } else {
-          await page.fill(selector, value);
+          // await page.fill(selector, value);
+          await typeLikeHuman(page, selector, value);
           console.log(`Saisi : ${field.name}`);
         }
       } catch (e) {
         console.log(`Erreur pour ${field.name} : ${e.message}`);
       }
 
-      await delay(randomDelay(200, 400)); // Délai entre chaque action
+      await delay(randomDelay(500, 1000)); // Délai entre chaque action
     }
   }
 
@@ -232,6 +233,6 @@ async function hoverAndClick(page, selector) {
     console.log("Formulaire soumis via .submit()");
   }
 
-  await delay(3000);
+  await delay(50000);
   await browser.close();
 })();
