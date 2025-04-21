@@ -2,7 +2,7 @@ import { chromium } from "playwright";
 
 // === Configuration ===
 const TARGET_URL = "https://edith.simschab.cloud/contact"; // URL de la page contenant le formulaire
-const FILL_HONEYPOT = false;
+const FILL_HONEYPOT = true;
 const WAIT_BEFORE_SUBMIT = 2000;
 const ENABLE_JS_SUBMISSION = true;
 const FORM_NAME = "form_contact"; // Nom du formulaire à chercher
@@ -124,55 +124,89 @@ async function hoverAndClick(page, selector) {
   // Filtrer les champs sans nom ou ID
   const validFields = fields.filter(field => field.name || field.id);
 
-  for (const field of validFields) {
+  for (const field of fields) {
     const selector = field.id ? `#${field.id}` : `[name="${field.name}"]`;
 
-    if (field.hidden && !field.value && !FILL_HONEYPOT) {
-      if (isCsrfField(field.name, field.id)) {
-        console.log(`Ignoré (CSRF) : ${field.name}`);
-        continue;
-      }
-      console.log(`Ignoré (honeypot) : ${field.name}`);
-      continue;
-    }
-
-    const value = getFakeValue(field);
-
-    try {
-      // Ajouter un mouvement de souris avant de saisir ou interagir
-      await hoverAndClick(page, selector);
-      await delay(randomDelay(1000, 1500)); // Simulation de temps d'attente entre les actions humaines
-
-      if (field.tag === "select") {
-        const options = await page.$$eval(`${selector} option`, opts =>
-          opts.map(o => ({ value: o.value, text: o.textContent }))
-        );
-        const validOption = options.find(o => o.value && o.value.trim() !== "");
-        if (validOption) {
-          await page.selectOption(selector, validOption.value);
-          console.log(`Sélectionné : ${field.name} → ${validOption.text}`);
-        } else {
-          console.log(`Aucune option valide pour : ${field.name}`);
+    if (field.hidden) {
+      // Si c'est un champ caché, on vérifie s'il est déjà rempli
+      if (FILL_HONEYPOT) {
+        let currentValue = "";
+        try {
+          currentValue = await page.$eval(selector, el => el.value);
+        } catch {
+          console.log(`Impossible de lire la valeur de ${field.name}`);
         }
-      } else if (field.type === "checkbox" || field.type === "radio") {
-        await page.check(selector);
-        console.log(`Coché : ${field.name}`);
-      } else if (field.tag === "textarea" || value.length > 10) {
-        await typeLikeHuman(page, selector, value);
-        console.log(`Saisi (lettre par lettre) : ${field.name}`);
-      } else if (field.type === "tel") {
-        // Utilisation de typeLikeHuman pour simuler la saisie du numéro de téléphone
-        await typeLikeHuman(page, selector, value);
-        console.log(`Saisi (lettre par lettre) : ${field.name}`);
-      } else {
-        await page.fill(selector, value);
-        console.log(`Saisi : ${field.name}`);
-      }
-    } catch (e) {
-      console.log(`Erreur pour ${field.name} : ${e.message}`);
-    }
 
-    await delay(randomDelay(1000, 2000));
+        // Si le champ est caché et déjà rempli, on l'ignore
+        if (currentValue && currentValue.trim() !== "") {
+          console.log(`Ignoré (honeypot rempli) : ${field.name} avec "${currentValue}"`);
+          continue;
+        }
+
+        // Si c'est un champ caché sans valeur et FILL_HONEYPOT est true, on peut le remplir
+        if (!currentValue) {
+          if (isCsrfField(field.name, field.id)) {
+            console.log(`Ignoré (CSRF) : ${field.name}`);
+            continue;
+          }
+
+          // Remplir le champ caché
+          const value = getFakeValue(field);
+          try {
+            await page.evaluate(
+              ({ selector, value }) => {
+                const el = document.querySelector(selector);
+                if (el) el.value = value;
+              },
+              { selector, value }
+            );
+            console.log(`Rempli (honeypot) : ${field.name} avec "${value}"`);
+          } catch (e) {
+            console.log(`Erreur pour ${field.name} : ${e.message}`);
+          }
+        }
+      } else {
+        console.log(`Ignoré (honeypot désactivé) : ${field.name}`);
+      }
+    } else {
+      // Si ce n'est pas un champ caché, on remplit les champs visibles
+      const value = getFakeValue(field);
+
+      try {
+        // Ajouter un mouvement de souris avant de saisir ou interagir
+        await hoverAndClick(page, selector);
+        await delay(randomDelay(1000, 1500)); // Simulation de temps d'attente entre les actions humaines
+
+        if (field.tag === "select") {
+          const options = await page.$$eval(`${selector} option`, opts =>
+            opts.map(o => ({ value: o.value, text: o.textContent }))
+          );
+          const validOption = options.find(o => o.value && o.value.trim() !== "");
+          if (validOption) {
+            await page.selectOption(selector, validOption.value);
+            console.log(`Sélectionné : ${field.name} → ${validOption.text}`);
+          } else {
+            console.log(`Aucune option valide pour : ${field.name}`);
+          }
+        } else if (field.type === "checkbox" || field.type === "radio") {
+          await page.check(selector);
+          console.log(`Coché : ${field.name}`);
+        } else if (field.tag === "textarea" || value.length > 10) {
+          await typeLikeHuman(page, selector, value);
+          console.log(`Saisi (lettre par lettre) : ${field.name}`);
+        } else if (field.type === "tel") {
+          await typeLikeHuman(page, selector, value);
+          console.log(`Saisi (lettre par lettre) : ${field.name}`);
+        } else {
+          await page.fill(selector, value);
+          console.log(`Saisi : ${field.name}`);
+        }
+      } catch (e) {
+        console.log(`Erreur pour ${field.name} : ${e.message}`);
+      }
+
+      await delay(randomDelay(1000, 2000)); // Délai entre chaque action
+    }
   }
 
   if (WAIT_BEFORE_SUBMIT > 0) {
