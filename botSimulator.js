@@ -4,7 +4,7 @@ import { chromium } from "playwright";
 const TARGET_URL = "https://127.0.0.1:8000/contact"; // URL de la page contenant le formulaire
 const FILL_HONEYPOT = false;
 const WAIT_BEFORE_SUBMIT = 100;
-const ENABLE_JS_SUBMISSION = false; // false pour stimulus sinon true pour les soumissions JS classiques
+const ENABLE_JS_SUBMISSION = true; // false pour stimulus sinon true pour les soumissions JS classiques
 const FORM_NAME = "form_contact"; // Nom du formulaire à chercher
 
 // === Fonctionnalités ===
