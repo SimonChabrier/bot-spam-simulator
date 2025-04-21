@@ -175,7 +175,7 @@ async function hoverAndClick(page, selector) {
       try {
         // Ajouter un mouvement de souris avant de saisir ou interagir
         await hoverAndClick(page, selector);
-        await delay(randomDelay(1000, 1500)); // Simulation de temps d'attente entre les actions humaines
+        await delay(randomDelay(200, 300)); // Simulation de temps d'attente entre les actions humaines
 
         if (field.tag === "select") {
           const options = await page.$$eval(`${selector} option`, opts =>
@@ -205,7 +205,7 @@ async function hoverAndClick(page, selector) {
         console.log(`Erreur pour ${field.name} : ${e.message}`);
       }
 
-      await delay(randomDelay(1000, 2000)); // Délai entre chaque action
+      await delay(randomDelay(200, 400)); // Délai entre chaque action
     }
   }
 
