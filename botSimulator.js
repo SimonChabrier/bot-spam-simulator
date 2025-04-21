@@ -2,8 +2,8 @@ import { chromium } from "playwright";
 
 // === Configuration ===
 const TARGET_URL = "https://edith.fr/contact"; // URL de la page contenant le formulaire
-const FILL_HONEYPOT = true;
-const WAIT_BEFORE_SUBMIT = 500;
+const FILL_HONEYPOT = false;
+const WAIT_BEFORE_SUBMIT = 2000;
 const ENABLE_JS_SUBMISSION = false; // false pour stimulus sinon true pour les soumissions JS classiques
 const FORM_NAME = "form_contact"; // Nom du formulaire à chercher
 
@@ -58,14 +58,14 @@ function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function randomDelay(min = 100, max = 200) {
+function randomDelay(min = 400, max = 1000) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
 async function typeLikeHuman(page, selector, text) {
   for (const char of text) {
     await page.type(selector, char);
-    await delay(randomDelay(10, 20));
+    await delay(randomDelay(50, 150));
   }
 }
 
@@ -123,6 +123,11 @@ async function hoverAndClick(page, selector) {
 
   // Filtrer les champs sans nom ou ID
   const validFields = fields.filter(field => field.name || field.id);
+  if (validFields.length === 0) {
+    console.log("Aucun champ valide trouvé dans le formulaire.");
+    await browser.close();
+    return;
+  }
 
   for (const field of fields) {
     const selector = field.id ? `#${field.id}` : `[name="${field.name}"]`;
