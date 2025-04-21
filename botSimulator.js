@@ -1,7 +1,7 @@
 import { chromium } from "playwright";
 
 // === Configuration ===
-const TARGET_URL = "https://edith.simschab.cloud/contact"; // URL de la page contenant le formulaire
+const TARGET_URL = "https://127.0.0.1:8000/contact"; // URL de la page contenant le formulaire
 const FILL_HONEYPOT = true;
 const WAIT_BEFORE_SUBMIT = 0;
 const ENABLE_JS_SUBMISSION = true;
