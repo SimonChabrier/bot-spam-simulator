@@ -1,10 +1,10 @@
 import { chromium } from "playwright";
 
 // === Configuration ===
-const TARGET_URL = "https://127.0.0.1:8000/contact"; // URL de la page contenant le formulaire
+const TARGET_URL = "https://edith.fr/contact"; // URL de la page contenant le formulaire
 const FILL_HONEYPOT = true;
-const WAIT_BEFORE_SUBMIT = 0;
-const ENABLE_JS_SUBMISSION = true;
+const WAIT_BEFORE_SUBMIT = 500;
+const ENABLE_JS_SUBMISSION = false; // false pour stimulus sinon true pour les soumissions JS classiques
 const FORM_NAME = "form_contact"; // Nom du formulaire à chercher
 
 // === Fonctionnalités ===
@@ -227,6 +227,6 @@ async function hoverAndClick(page, selector) {
     console.log("Formulaire soumis via .submit()");
   }
 
-  await delay(1000);
+  await delay(3000);
   await browser.close();
 })();
