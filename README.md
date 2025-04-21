@@ -15,5 +15,5 @@ npm install
 To run the simulator, use the following command:
 
 ```bash
-node run simulate
+npm run simulate
 ```
